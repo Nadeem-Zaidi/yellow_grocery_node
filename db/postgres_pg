@@ -1,0 +1,26 @@
+const { Pool } = require('pg');
+
+const poolConfig = {
+    user: 'postgres',
+    host: 'localhost',
+    database: 'yellowgrocery',
+    password: 'postgres',
+    port: 5432,
+    // additional config options if needed
+};
+
+class SingletonPool {
+    constructor() {
+        if (!SingletonPool.instance) {
+            SingletonPool.instance = new Pool(poolConfig);
+        }
+    }
+
+    getInstance() {
+        return SingletonPool.instance;
+    }
+}
+
+const db = new SingletonPool().getInstance();
+
+module.exports = db;

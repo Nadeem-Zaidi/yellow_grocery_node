@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+service Products {
+  rpc AllProductsByCategory(ProductByCategoryIdRequest)
+      returns (stream Product) {};
+  rpc AllProductStream(EmptyRequest) returns (stream Product) {};
+
+  rpc ProductDetail(ProductDetailRequest) returns (stream Product) {};
+}
+
+message EmptyRequest {
+  // This is an empty message, used when no input parameters are needed.
+}
+
+message ProductVariationRequest { string product_id = 1; }
+
+message ProductDetailRequest {
+  string product_id = 1;
+  string variation_id = 2;
+}
+
+message ProductByCategoryIdRequest { string category_id = 1; }
+message AllProductResponse { repeated Product product = 1; }
+
+message Variation {
+  string id = 1;
+  int32 quantity = 2;
+  float price = 3;
+  float discount = 4;
+  float newprice = 5;
+  string unit = 6;
+  string size = 7;
+  string description = 8;
+  repeated string images = 9;
+  string pack_size = 10;
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  string price = 3;
+  string newPrice = 4;
+  string discount = 5;
+  string description = 6;
+  string brand = 7;
+  repeated string category = 8;
+  string unit = 9;
+  repeated string images = 10;
+  string vid = 11;
+  repeated Variation variation = 12;
+  string pack_size = 13;
+}

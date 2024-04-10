@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id       String     @id @default(uuid())
+  name     String
+  images   String[]
+  parentid String?    @map("parent_id")
+  parent   Category?  @relation("CategoryToCategory", fields: [parentid], references: [id])
+  children Category[] @relation("CategoryToCategory")
+}
+
+model Product {
+  id                String              @id @default(uuid()) // UUID for unique identifier
+  name              String
+  description       String
+  category          String[]
+  images            String[]
+  brand             String
+  tags              String[]
+  weight            Float?
+  dimensions        String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  description_list  String[]
+  ColorSize         ColorSize[]         @relation("product_variation")
+  PackSizeVariation PackSizeVariation[] @relation("product_packsize")
+  OrderItem         OrderItem[]
+  Cart              Cart[]
+}
+
+model PackSizeVariation {
+  id               String      @id @default(uuid())
+  product_id       String
+  product          Product     @relation("product_packsize", fields: [product_id], references: [id])
+  quantity         Int         @default(0)
+  sku              String
+  price            Float       @default(0)
+  discount         Float?
+  newprice         Float       @default(0)
+  unit             String?
+  color            String?
+  package_size     Int
+  description      String?
+  description_list String[]
+  about_product    String[]
+  images           String[]
+  tags             String[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  OrderItem        OrderItem[]
+}
+
+model ColorSize {
+  id               String   @id @default(uuid())
+  product_id       String
+  product          Product  @relation("product_variation", fields: [product_id], references: [id])
+  quantity         Int      @default(0)
+  sku              String
+  price            Float    @default(0)
+  discount         Float?
+  newprice         Float    @default(0)
+  unit             String?
+  color            String?
+  size             String?
+  package_size     Int
+  description      String?
+  description_list String[]
+  images           String[]
+}
+
+model User {
+  id           String    @id @default(uuid()) // UUID for unique identifier
+  email        String    @unique
+  password     String // Consider storing hashed passwords
+  firstName    String
+  lastName     String
+  address      String[] // JSON field to store address details, or create a related model
+  phoneNumber  String?   @unique // Optional
+  dateOfBirth  DateTime?
+  profileImage String? // URL to the profile image, optional
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLogin    DateTime?
+
+  // Roles or Permissions (if applicable)
+  role String? // Could be an enum of roles like ADMIN, USER, etc.
+
+  // Relations
+  orders Order[] // If you have an Order model for user orders
+
+  // Additional fields based on your application requirements
+  Cart Cart[]
+}
+
+model Cart {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  product   Product[]
+  quantity  Int       @default(1)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Order {
+  id              String    @id @default(uuid()) // UUID for unique identifier
+  userId          String // Foreign key for the User model
+  user            User      @relation(fields: [userId], references: [id])
+  totalPrice      Float // Total price of the order in the smallest unit of currency
+  status          String // Order status (e.g., 'pending', 'shipped', 'delivered', etc.)
+  orderDate       DateTime  @default(now())
+  deliveryDate    DateTime?
+  paymentMethod   String // Payment method (e.g., 'credit_card', 'paypal', etc.)
+  shippingAddress Json // JSON field for shipping address, or link to an Address model
+
+  // Product-Order Relationship (many-to-many)
+  items OrderItem[]
+
+  // Additional fields based on your application requirements
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Int // Price per item at the time of order
+
+  // Additional fields like size, color, etc., if needed
+  PackSizeVariation   PackSizeVariation? @relation(fields: [packSizeVariationId], references: [id])
+  packSizeVariationId String?
+}
