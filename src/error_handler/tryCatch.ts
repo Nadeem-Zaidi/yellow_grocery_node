@@ -4,7 +4,8 @@ const tryCatch = (controller: (req: Request, res: Response, next: NextFunction) 
     try {
         await controller(req, res, next);
     } catch (error) {
-        next(error);
+        console.log(error)
+        return next(error);
     }
 };
 

@@ -10,72 +10,147 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AttributeDataType {
+  ALN     @map("ALN")
+  NUMERIC @map("NUMERIC")
+}
+
+model brand {
+  id           String @id @default(uuid())
+  name         String
+  description  String
+  abbreviation String
+}
+
 model Category {
-  id       String     @id @default(uuid())
-  name     String
-  images   String[]
-  parentid String?    @map("parent_id")
-  parent   Category?  @relation("CategoryToCategory", fields: [parentid], references: [id])
-  children Category[] @relation("CategoryToCategory")
+  id      String   @id @default(uuid())
+  name    String   @unique
+  images  String[]
+  left    Int?
+  right   Int?
+  tree_id String?
+}
+
+model Categories {
+  id               String             @id @default(uuid())
+  name             String             @unique
+  description      String?
+  images           String[]
+  parent_id        String? // Assuming every category has a parent
+  parent           Categories?        @relation("parent_category", fields: [parent_id], references: [id])
+  children         Categories[]       @relation("parent_category") // Renamed from Categories to avoid conflict
+  CategorySpec     CategorySpec[]     @relation("categories_categoryspec")
+  path             String?            @unique
+  ProductVariation ProductVariation[]
+  ProductSpecs     ProductSpecs[]
+  Product          Product[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model MeasureUnit {
+  id               String             @id @default(uuid())
+  unit             String             @unique
+  abbreviation     String
+  description      String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  CategorySpec     CategorySpec[]
+  ProductVariation ProductVariation[]
+}
+
+model Attribute {
+  id            String            @id @default(uuid())
+  attributename String            @unique
+  description   String?
+  datatype      AttributeDataType
+  CategorySpec  CategorySpec[]    @relation("attribute_categoryspec")
+  ProductSpecs  ProductSpecs[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model CategorySpec {
+  id            String       @id @default(uuid())
+  categoryid    String
+  categories    Categories   @relation("categories_categoryspec", fields: [categoryid], references: [id])
+  attributename String
+  attribute     Attribute    @relation("attribute_categoryspec", fields: [attributename], references: [attributename])
+  MeasureUnit   MeasureUnit? @relation(fields: [measureunit], references: [unit])
+  measureunit   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Product {
-  id                String              @id @default(uuid()) // UUID for unique identifier
-  name              String
-  description       String
-  category          String[]
-  images            String[]
-  brand             String
-  tags              String[]
-  weight            Float?
-  dimensions        String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  description_list  String[]
-  ColorSize         ColorSize[]         @relation("product_variation")
-  PackSizeVariation PackSizeVariation[] @relation("product_packsize")
-  OrderItem         OrderItem[]
-  Cart              Cart[]
-}
-
-model PackSizeVariation {
-  id               String      @id @default(uuid())
-  product_id       String
-  product          Product     @relation("product_packsize", fields: [product_id], references: [id])
-  quantity         Int         @default(0)
-  sku              String
-  price            Float       @default(0)
-  discount         Float?
-  newprice         Float       @default(0)
-  unit             String?
-  color            String?
-  package_size     Int
-  description      String?
-  description_list String[]
-  about_product    String[]
-  images           String[]
+  id               String             @id @default(uuid()) // UUID for unique identifier
+  name             String
+  description      String
+  category         String
+  Category         Categories         @relation(fields: [categoryId], references: [id])
+  brand            String
+  measuringunit    String?
   tags             String[]
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  description_list String[]
   OrderItem        OrderItem[]
+  Cart             Cart[]
+  ProductVariation ProductVariation[]
+  categoryId       String
 }
 
-model ColorSize {
-  id               String   @id @default(uuid())
-  product_id       String
-  product          Product  @relation("product_variation", fields: [product_id], references: [id])
-  quantity         Int      @default(0)
-  sku              String
-  price            Float    @default(0)
-  discount         Float?
-  newprice         Float    @default(0)
-  unit             String?
-  color            String?
-  size             String?
-  package_size     Int
-  description      String?
-  description_list String[]
-  images           String[]
+model ProductVariation {
+  id                     String         @unique @default(uuid())
+  name                   String
+  description            String
+  category               Categories?    @relation(fields: [categoryid], references: [id])
+  product                Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId              String
+  images                 String[]
+  tags                   String[]
+  sku                    String
+  sellingprice           Decimal        @db.Decimal(15, 2)
+  mrp                    Decimal        @db.Decimal(15, 2)
+  discount               Decimal        @db.Decimal(10, 2)
+  manufacturingDate      DateTime?
+  expirationDate         DateTime?
+  complianceCertificates String?
+  ShippingClass          String?
+  deliveryTimeMin        Decimal?       @db.Decimal(10, 2) // Minimum delivery time in hours or days
+  deliveryTimeMax        Decimal?       @db.Decimal(10, 2) // Maximum delivery time in hours or days
+  deliveryTime           MeasureUnit?   @relation(fields: [deliverytimeunit], references: [id]) // Unit of time: 'hours' or 'days'
+  ProductSpecs           ProductSpecs[]
+  categoryid             String?
+  deliverytimeunit       String?
+  isFeatured             Boolean        @default(true)
+  inventory              inventory[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+}
+
+model ProductSpecs {
+  id                 String           @unique @default(uuid())
+  productvariation   ProductVariation @relation(fields: [productVariationId], references: [id], onDelete: Cascade)
+  category           Categories       @relation(fields: [categoryId], references: [id])
+  categoryId         String
+  attribute          Attribute        @relation(fields: [attributename], references: [attributename])
+  attributename      String
+  alnvalue           String?
+  numvalue           Decimal?
+  productVariationId String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model inventory {
+  id                 String           @unique @default(uuid())
+  variationId        ProductVariation @relation(fields: [productVariationId], references: [id])
+  productVariationId String
+  reststockdate      DateTime?
+  quantity           Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 }
 
 model User {
@@ -139,6 +214,4 @@ model OrderItem {
   price     Int // Price per item at the time of order
 
   // Additional fields like size, color, etc., if needed
-  PackSizeVariation   PackSizeVariation? @relation(fields: [packSizeVariationId], references: [id])
-  packSizeVariationId String?
 }

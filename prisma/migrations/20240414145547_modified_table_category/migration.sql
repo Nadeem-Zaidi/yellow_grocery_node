@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Category" ALTER COLUMN "left" DROP NOT NULL,
+ALTER COLUMN "right" DROP NOT NULL;
