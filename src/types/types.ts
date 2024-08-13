@@ -52,3 +52,9 @@ export interface CategorySpec {
     measureunit?: string
 }
 
+export interface Brands{
+    name:string
+    description:string
+    abbreviation:string
+}
+

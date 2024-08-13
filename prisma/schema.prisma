@@ -36,6 +36,7 @@ model Categories {
   name             String             @unique
   description      String?
   images           String[]
+  tags             String[]
   parent_id        String? // Assuming every category has a parent
   parent           Categories?        @relation("parent_category", fields: [parent_id], references: [id])
   children         Categories[]       @relation("parent_category") // Renamed from Categories to avoid conflict
@@ -46,6 +47,8 @@ model Categories {
   Product          Product[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  LandingPage      LandingPage?       @relation(fields: [landingPageId], references: [id])
+  landingPageId    String?
 }
 
 model MeasureUnit {
@@ -57,6 +60,7 @@ model MeasureUnit {
   updatedAt        DateTime           @updatedAt
   CategorySpec     CategorySpec[]
   ProductVariation ProductVariation[]
+  ProductSpecs     ProductSpecs[]
 }
 
 model Attribute {
@@ -136,11 +140,13 @@ model ProductSpecs {
   categoryId         String
   attribute          Attribute        @relation(fields: [attributename], references: [attributename])
   attributename      String
+  measureunit        MeasureUnit      @relation(fields: [unit], references: [unit])
   alnvalue           String?
   numvalue           Decimal?
   productVariationId String
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  unit               String
 }
 
 model inventory {
@@ -214,4 +220,9 @@ model OrderItem {
   price     Int // Price per item at the time of order
 
   // Additional fields like size, color, etc., if needed
+}
+
+model LandingPage {
+  id         String       @id @default(uuid())
+  categories Categories[]
 }

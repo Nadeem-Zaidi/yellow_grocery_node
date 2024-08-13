@@ -10,6 +10,9 @@ import attributeRouter from './routes/attributes/attribute';
 import categorySpecRouter from './routes/category_spec/category_spec';
 import productSpecRouter from './routes/product_spec/product_spec';
 import measureunitRouter from './measureunit/measureunit';
+import landingPageRouter from './landing_page/landing_page';
+import dashBoardRouter from './dashboard/dashboard';
+import brandRouter from './brand/brand_router';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -25,7 +28,9 @@ app.use("/grocery/attribute", attributeRouter)
 app.use("/grocery/categoryspec", categorySpecRouter)
 app.use("/grocery/specs", productSpecRouter)
 app.use("/grocery/measureunit", measureunitRouter)
+app.use("/grocery/dashboard",dashBoardRouter)
 // app.use("/grocery", variationRouter)
+app.use("/grocery/brands",brandRouter)
 
 app.use(errorHandler)
 

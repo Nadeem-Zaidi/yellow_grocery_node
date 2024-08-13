@@ -35,51 +35,69 @@ async function newProduct(req: Request, res: Response, next: NextFunction) {
         }
     })
 
-    return res.status(200).json({ product: createProduct })
+    if(createProduct){
+        return res.status(200).json(createProduct)
+
+    }else{
+        
+    }
+
+    
 }
 
 const fetchProduct = async (req: Request, res: Response, next: NextFunction) => {
     const productId: string = req.params.id;
-    if (productId) {
-        const product = await prisma.product.findUnique({
-            where: {
-                id: productId
+
+    if(!productId){
+        throw new Error("productis is invalid")
+    }
+  
+    const product = await prisma.product.findUnique({
+        where: {
+            id: productId
+        },
+        select: {
+            id: true,
+            name: true,
+            description: true,
+            category: true,
+            brand: true,
+            measuringunit: true,
+            tags: true,
+            categoryId: true,
+            Category: {
+                select: {
+                    id: true,
+                    name: true,
+                    path: true
+                }
             },
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                category: true,
-                brand: true,
-                measuringunit: true,
-                tags: true,
-                categoryId: true,
-                Category: {
-                    select: {
-                        id: true,
-                        name: true,
-                        path: true
-                    }
-                },
-                ProductVariation: {
-                    select: {
-                        id: true,
-                        productId: true,
-                        name: true,
-                        description: true,
-                        categoryid: true,
-                        product: {
-                            select: {
-                                category: true
-                            }
+            ProductVariation: {
+                select: {
+                    id: true,
+                    productId: true,
+                    name: true,
+                    description: true,
+                    categoryid: true,
+                    product: {
+                        select: {
+                            category: true
                         }
                     }
                 }
-            },
-        })
-        return res.status(200).json(product)
+            }
+        },
+    })
 
+    if(!product){
+        throw new Error("Error in creating a product")
+    }else{
+        return res.status(200).json(product)
     }
+
+
+
+
 }
 
 const productList = async (req: Request, res: Response, next: NextFunction) => {
@@ -131,8 +149,22 @@ const productList = async (req: Request, res: Response, next: NextFunction) => {
             Category: true,
             ProductVariation: {
                 select: {
+                    id:true,
                     name: true,
-                    ProductSpecs: true
+                    description:true,
+                    productId:true,
+                    categoryid:true,
+                    sellingprice:true,
+                    mrp:true,
+                    discount:true,
+                    ProductSpecs:{
+                        select:{
+                            id:true,
+                            attributename:true,
+                            alnvalue:true,
+                            numvalue:true,
+                        }
+                    }
                 }
             },
         },

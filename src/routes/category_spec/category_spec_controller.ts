@@ -4,6 +4,7 @@ import { AttributeDataType, Prisma } from "@prisma/client";
 import { CategorySpec, CategorySpecInput } from "../../types/types";
 
 const createCategorySpec = async (req: Request, res: Response, next: NextFunction) => {
+    console.log(req.body)
 
     const { categoryid, attributename, measureunit }: CategorySpecInput = req.body
 
@@ -15,51 +16,69 @@ const createCategorySpec = async (req: Request, res: Response, next: NextFunctio
         attributename,
         measureunit
     }
-
     const categorySpec = await prisma.categorySpec.create({
         data: data,
         select: {
             categoryid: true,
             attributename: true,
             measureunit: true
+
         }
     })
-
     if (!categorySpec) {
         return res.status(400).json({ error: "Something wen wrong while creating categoryspec record" })
     }
 
-    return res.json(200).json(categorySpec)
+    return res.status(200).json(categorySpec)
+}
 
+const createManyCategorySpec=async(req:Request,res:Response,next:NextFunction)=>{
+    console.log(req.body)
+    const categorySpecList:CategorySpecInput[]=req.body
+    if(!categorySpecList){
+        return res.status(400).json({error:"Missing required fields"})
+    }
 
-
+    const categorySpecs=await prisma.categorySpec.createMany({
+        data:categorySpecList
+    })
+    if(!categorySpecs){
+        return res.status(400).json({error:"Something went wrong while creating category specs record"})
+    }
 }
 
 const updateCategorySpec = async (req: Request, res: Response, next: NextFunction) => {
-    console.log(req.body)
-    const { id, categoryid, attributename, measureunitid }: { id: string, categoryid: string, attributename: string, measureunitid: string } = req.body
 
-    const data: { attributename?: string, measureUnitId?: string } = {}
-    if (id && categoryid) {
-        if (attributename != null) data.attributename = attributename
-        if (measureunitid != null) data.measureUnitId = measureunitid
-        const updatedCategory = await prisma.categorySpec.update({
-            where: {
-                id: id
-            },
-            data
-        })
+    const id:string=req.params.id
+    
+    const {attributename, measureunit }: {attributename: string, measureunit: string } = req.body
 
-        return res.status(200).json(updatedCategory)
+    const data: { attributename?: string, measureunit?: string } = {}
 
-    } else {
-        throw new Error("Cannot create the category without id and categoryid")
+    if(!id){
+        return res.status(400).json({error:"Id is missing"})
     }
+
+    if (attributename != null) data.attributename = attributename
+    if (measureunit != null) data.measureunit = measureunit
+    const updatedCategorySpec = await prisma.categorySpec.update({
+        where: {
+            id: id
+        },
+        data
+    })
+    if(!updatedCategorySpec){
+        return res.status(400).json({error:"Something went wtong while updating categoryspec record"})
+    }
+
+    return res.status(200).json(updateCategorySpec)
 }
 
 const fetchCategorySpec = async (req: Request, res: Response, next: NextFunction) => {
 
+    
     const { page = 1, pagesize = 10, sortKey = 'createdAt', sortOrder = 'asc', attributename, measureunit }: CategorySpec = req.query
+    const categoryid=req.params.id
 
     let pageNumber = parseInt(page as string)
     let pageSize = parseInt(pagesize as string)
@@ -77,7 +96,8 @@ const fetchCategorySpec = async (req: Request, res: Response, next: NextFunction
 
     const whereClause: Prisma.CategorySpecWhereInput = {
         ...(attributename && attributename.trim() !== '' && { attributename: { contains: attributename, mode: 'insensitive' } }),
-        ...(measureunit && measureunit.trim() !== '' && { neasureunit: { contains: measureunit, mode: 'insensitive' } })
+        ...(measureunit && measureunit.trim() !== '' && { neasureunit: { contains: measureunit, mode: 'insensitive' } }),
+        ...(categoryid && categoryid.trim() !== '' && { categoryid: categoryid }) 
     }
 
 
@@ -166,4 +186,4 @@ const deleteCategorySpec = async (req: Request, res: Response, next: NextFunctio
     }
 
 }
-export default { createCategorySpec, fetchCategorySpec, updateCategorySpec, categorySpecWithCategoryId, deleteCategorySpec }
+export default { createCategorySpec, fetchCategorySpec, updateCategorySpec, categorySpecWithCategoryId, deleteCategorySpec,createManyCategorySpec }

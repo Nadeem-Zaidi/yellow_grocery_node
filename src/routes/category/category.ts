@@ -6,12 +6,12 @@ import ad_category_controller from './ad_category_controller';
 
 const categoryRouter = express.Router();
 
-
-categoryRouter.get('/', (ad_category_controller.fetchCategories))
+categoryRouter.get('/mobile',tryCatch(ad_category_controller.categoryMobile))
+categoryRouter.get('/', tryCatch(ad_category_controller.fetchCategories))
 categoryRouter.get('/:id', tryCatch(ad_category_controller.fetchCategory))
 categoryRouter.post('/add_category', tryCatch(ad_category_controller.addCategory))
 
-categoryRouter.put('/update/:id', tryCatch(ad_category_controller.updateCategory))
+categoryRouter.patch('/update/:id', tryCatch(ad_category_controller.updateCategory))
 
 export default categoryRouter
 

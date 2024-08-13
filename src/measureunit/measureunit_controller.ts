@@ -10,9 +10,6 @@ interface MeasureunitQueryInput {
 
 }
 
-
-
-
 const createMeasuringunit = async (req: Request, res: Response, next: NextFunction) => {
     console.log(req.body)
     const { abbreviation, description, unit }: MeasureunitQueryInput = req.body

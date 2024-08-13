@@ -5,16 +5,17 @@ import { Prisma } from '@prisma/client'
 
 
 const createProductSpec = async (req: Request, res: Response, next: NextFunction) => {
-    const { attributename, categoryid, variationid, numvalue, alnvalue }: { attributename: string, categoryid: string, variationid: string, numvalue?: string, alnvalue?: string } = req.body
+    const { attributename, categoryid, variationid, numvalue, alnvalue,unit }: { attributename: string, categoryid: string, variationid: string, numvalue?: string, alnvalue?: string,unit:string } = req.body
 
-    if (attributename && categoryid && variationid && numvalue && alnvalue) {
+    if (attributename && categoryid && variationid && numvalue && alnvalue && unit) {
         const productSpec = await prisma.productSpecs.create({
             data: {
                 attributename: attributename,
                 categoryId: categoryid,
                 productVariationId: variationid,
                 numvalue: parseFloat(numvalue) ?? null,
-                alnvalue: alnvalue ?? null
+                alnvalue: alnvalue ?? null,
+                unit:unit
             },
             select: {
                 attributename: true,

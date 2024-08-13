@@ -16,6 +16,66 @@ interface CategoryWithPath extends Category {
     path: string;
 }
 
+
+
+const categoryMobile = async (req: Request, res: Response, next: NextFunction) => {
+    const {
+        page = '1',
+        pagesize = '10',
+
+    }: { page?: string, pagesize?: string} = req.query;
+
+    let pageNumber = parseInt(page, 10);
+    let pageSize = parseInt(pagesize, 10);
+
+    // Validate pageNumber and pageSize
+    pageNumber = isNaN(pageNumber) || pageNumber < 1 ? 1 : pageNumber;
+    pageSize = isNaN(pageSize) || pageSize < 1 ? 10 : pageSize;
+    const skip = (pageNumber - 1) * pageSize;
+    try {
+        const categoriesList = await prisma.categories.findMany({
+            select:{
+                id:true,
+                name:true,
+                description:true,
+                parent_id:true,
+                path:true,
+                createdAt:true,
+                children:true
+
+            },
+            where:{
+                parent_id:null
+            },
+            skip: skip,
+            take: pageSize,
+        });
+
+        console.log(categoriesList)
+
+        const totalCategories = await prisma.categories.count();
+        const totalPages = Math.ceil(totalCategories / pageSize);
+        const hasMore = pageNumber < totalPages;
+        const nextPage = hasMore ? pageNumber + 1 : null;
+
+        return res.status(200).json({
+            data: categoriesList,
+            meta: {
+                totalCategories,
+                totalPages,
+                currentPage: pageNumber,
+                hasMore,
+                nextPage,
+            },
+        });
+    } catch (error) {
+        next(error); // Pass any errors to the next middleware (typically the error handler)
+    }
+};
+
+
+
+
 const fetchCategory = async (req: Request, res: Response, next: NextFunction) => {
     const categoryId: string = req.params.id;
     if (categoryId) {
@@ -100,6 +160,17 @@ const fetchCategories = async (req: Request, res: Response, next: NextFunction) 
 
     try {
         const categoriesList = await prisma.categories.findMany({
+            select:{
+                id:true,
+                name:true,
+                description:true,
+                parent_id:true,
+                path:true,
+                tags:true,
+                createdAt:true,
+                children:true
+
+            },
             where: whereClause,
             orderBy: order,
             skip: skip,
@@ -111,7 +182,7 @@ const fetchCategories = async (req: Request, res: Response, next: NextFunction) 
         const hasMore = pageNumber < totalPages;
         const nextPage = hasMore ? pageNumber + 1 : null;
 
-        res.status(200).json({
+        return res.status(200).json({
             data: categoriesList,
             meta: {
                 totalCategories,
@@ -126,88 +197,105 @@ const fetchCategories = async (req: Request, res: Response, next: NextFunction) 
     }
 };
 const addCategory = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { name, parent, images } = req.body;
+    console.log(req.body);
+    
+    const { name, parent, images } = req.body;
 
-        if (!name) {
-            return res.status(400).json({ error: "Name is required" });
+    if (!name) {
+        return res.status(400).json({ error: "Name is required" });
+    }
+
+    let parentCategory = null;
+    if (parent) {
+        parentCategory = await prisma.categories.findFirst({
+            where: { id: parent.toString() },
+            select: { id: true, path: true }
+        });
+    }
+
+    // if (!parentCategory) {
+    //     return res.status(400).json({ error: "Parent category not found" });
+    // }
+
+    const category = await prisma.categories.create({
+        data: {
+            name: name.toString(),
+            parent_id: parentCategory?.id,
+            images: Array.isArray(images) ? images : [],
+            path: parentCategory?`${parentCategory?.path}/${name}`:name
         }
+    });
 
-        let category;
-
-        if (parent === "self") {
-            category = await prisma.categories.create({
-                data: {
-                    name: name.toString(),
-                    parent_id: null,
-                    images: images ?? [],
-                    path: name.toString()
-                }
-            });
-        } else if (parent) {
-            const parentCategory = await prisma.categories.findFirst({
-                where: { name: parent.toString() },
-                select: { id: true, path: true }
-            });
-
-            if (parentCategory) {
-                category = await prisma.categories.create({
-                    data: {
-                        name: name.toString(),
-                        parent_id: parentCategory.id,
-                        images: images ?? [],
-                        path: `${parentCategory.path}/${name}`
-                    }
-                });
-            } else {
-                return res.status(400).json({ error: "Parent category not found" });
-            }
-        } else {
-            category = await prisma.categories.create({
-                data: {
-                    name: name.toString(),
-                    parent_id: null,
-                    images: images ?? [],
-                    path: name.toString()
-                }
-            });
-        }
-
+    if (category) {
         return res.status(200).json(category);
-    } catch (error) {
-        console.error("Error adding category:", error);
-        return res.status(500).json({ error: "Internal Server Error" });
+    } else {
+        return res.status(500).json({ error: "Failed to create category" });
     }
 };
 
+
 const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
-    const id: string = req.params.id;
-    console.log(req.body)
-    const { name, description, images }: { name?: string; description?: string; images?: string[] } = req.body;
+    const id: string = req.params.id.toString();
+    
+    const { name, description, images,tags }: { name?: string; description?: string; images?: string[],tags?:string[] } = req.body;
 
     // Prepare the data object only with provided fields
-    const data: { name?: string; description?: string; images?: string[] } = {};
+    const data: { name?: string; description?: string; images?: string[],tags?:string[] } = {};
     if (name !== undefined) data.name = name;
     if (description !== undefined) data.description = description;
     if (images && images.length > 0) data.images = images;
+    if(tags && tags.length >0 )data.tags=tags
+
+    console.log(data)
 
     // Check if the ID is present and if there is at least one field to update
-    console.log(images)
-    console.log(id)
     if (!id || Object.keys(data).length === 0) {
         return res.status(400).json({ error: 'Invalid request: ID or update fields are missing' });
     }
+    const updatedCategory = await prisma.categories.update({
+        where: { id },
+        data
+    });
 
-    try {
-        const updatedCategory = await prisma.categories.update({
-            where: { id },
-            data
-        });
-        return res.status(200).json(updatedCategory);
-    } catch (error) {
-        console.error('Error updating category:', error);
-        return res.status(500).json({ error: 'Failed to update category' });
+    if(!updatedCategory){
+        return res.status(400).json({error:"error in updating category"})
     }
-};
 
-export default { addCategory, fetchCategories, fetchCategory, updateCategory };
+    return res.status(200).json(updatedCategory)  
+}
+
+    const landingPage=async (req:Request,res:Response,next:NextFunction)=>{
+
+        const {
+            page = '1',
+            pagesize = '5',
+
+        }: { page?: string, pagesize?: string} = req.query;
+
+        let pageContent=[]
+
+        const categories=await prisma.categories.findMany({
+            select:{
+                id:true,
+                name:true,
+                children:{
+                    select:{
+                        id:true,
+                        name:true,
+                        images:true
+                    }
+                }
+
+            }
+        })
+
+        if(categories) pageContent.push(categories)
+
+        const totalPages=Math.ceil(pageContent.length/5)
+        
+
+        
+
+    }
+
+export default { addCategory, fetchCategories, fetchCategory, updateCategory,categoryMobile }
