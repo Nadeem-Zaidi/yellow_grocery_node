@@ -6,7 +6,6 @@ import { Brands } from "../types/types";
 
 
 const fetchBrand=async (req:Request,res:Response,next:NextFunction)=>{
-    console.log(req.body)
     const {
         page='1',
         pagesize='10',

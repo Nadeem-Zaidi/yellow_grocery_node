@@ -42,7 +42,7 @@ model Categories {
   children         Categories[]       @relation("parent_category") // Renamed from Categories to avoid conflict
   CategorySpec     CategorySpec[]     @relation("categories_categoryspec")
   path             String?            @unique
-  ProductVariation ProductVariation[]
+  productvariation productvariation[]
   ProductSpecs     ProductSpecs[]
   Product          Product[]
   createdAt        DateTime           @default(now())
@@ -59,8 +59,9 @@ model MeasureUnit {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   CategorySpec     CategorySpec[]
-  ProductVariation ProductVariation[]
+  productvariation productvariation[]
   ProductSpecs     ProductSpecs[]
+  inventory        inventory[]
 }
 
 model Attribute {
@@ -100,11 +101,11 @@ model Product {
   description_list String[]
   OrderItem        OrderItem[]
   Cart             Cart[]
-  ProductVariation ProductVariation[]
+  productvariation productvariation[]
   categoryId       String
 }
 
-model ProductVariation {
+model productvariation {
   id                     String         @unique @default(uuid())
   name                   String
   description            String
@@ -114,9 +115,6 @@ model ProductVariation {
   images                 String[]
   tags                   String[]
   sku                    String
-  sellingprice           Decimal        @db.Decimal(15, 2)
-  mrp                    Decimal        @db.Decimal(15, 2)
-  discount               Decimal        @db.Decimal(10, 2)
   manufacturingDate      DateTime?
   expirationDate         DateTime?
   complianceCertificates String?
@@ -131,11 +129,12 @@ model ProductVariation {
   inventory              inventory[]
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
+  pricing                pricing[]
 }
 
 model ProductSpecs {
   id                 String           @unique @default(uuid())
-  productvariation   ProductVariation @relation(fields: [productVariationId], references: [id], onDelete: Cascade)
+  productvariation   productvariation @relation(fields: [productVariationId], references: [id], onDelete: Cascade)
   category           Categories       @relation(fields: [categoryId], references: [id])
   categoryId         String
   attribute          Attribute        @relation(fields: [attributename], references: [attributename])
@@ -151,12 +150,25 @@ model ProductSpecs {
 
 model inventory {
   id                 String           @unique @default(uuid())
-  variationId        ProductVariation @relation(fields: [productVariationId], references: [id])
+  variationId        productvariation @relation(fields: [productVariationId], references: [id])
   productVariationId String
+  unit               MeasureUnit      @relation(fields: [measureUnitId], references: [id])
   reststockdate      DateTime?
   quantity           Int
+  stocksize          Int
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  measureUnitId      String
+}
+
+model pricing {
+  id                 String           @unique @default(uuid())
+  mrp                Decimal?         @db.Decimal(10, 2)
+  sellingprice       Decimal?         @db.Decimal(10, 2)
+  discount           Decimal?         @db.Decimal(10, 2)
+  finalprice         Decimal?         @db.Decimal(10, 2)
+  variation          productvariation @relation(fields: [productVariationId], references: [id])
+  productVariationId String
 }
 
 model User {

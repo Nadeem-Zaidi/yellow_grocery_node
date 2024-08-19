@@ -4,13 +4,26 @@ export interface ProductVariationInput {
     description: string
     categoryid: string
     images: string[]
-    tags: string
+    tags: string[]
     sku: string
     sellingprice: string | number
     mrp: string | number
     discount: string | number
     quantity: string | number
+    measureUnitId:string
+    stocksize:string|number
+}
 
+export interface ProductVariationQuery {
+    id?: string;
+    productid?: string;
+    name?: string;
+    description?: string;
+    category?: string;
+    page?: string;
+    pagesize?: string;
+    sortKey?: string;
+    sortOrder?: string;
 }
 
 export interface ProductVariationDBInput {
@@ -19,12 +32,14 @@ export interface ProductVariationDBInput {
     description: string
     categoryid: string
     images: string[]
-    tags: string
+    tags: string[]
     sku: string
     sellingprice: number
     mrp: number
     discount: number
     quantity: number
+    measureUnitId:string,
+    stocksize:number|string
 }
 
 export interface MeasuringUnit {
